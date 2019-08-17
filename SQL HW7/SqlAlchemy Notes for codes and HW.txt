@@ -1,0 +1,426 @@
+Notes and HW 8 SQL Alchemy
+
+Reading files into Jupyter via sql alchemy:
+
+# sqlAlchemy
+from sqlalchemy import create_engine
+
+# Path to sqlite
+database_path = "../Resources/Census_Data.sqlite"
+
+# Create an engine that can talk to the database
+engine = create_engine(f"sqlite:///{database_path}")    *** the (f"sqlite:///... this is a connection string
+# engine = create_engine(f"postgresql://scott:tiger@localhost/test")    *** so after postgresql://username:password/location of db server/db name...
+# engine = create_engine(f"mysql://scott:tiger@localhost/test")
+
+# query all records in the database (db)
+data = engine.execute("select * from census_data")
+
+for record in data:
+	print(record)
+
+... the example above simulates a db engine using sqlalchemy to make the connection (create and engine) in sqlalchemy and query data out. 
+... data shows up in a list. command provides a pointer of where the data is. reads data and returns it in a tuple not a dataframe. 
+... so you have to put it in a dataframe then you can change the data if you want
+
+Activity 1: use db to creat a sqlite engine; use engine to select rows and columns from the table icecreamstore; create new query to find ice cream flavors that cost $1.25 or greater
+# sqlAlchemy
+from sqlalchemy import create_engine
+database_path = "../Resources/icecreamstore.sqlite"
+
+# Create engine
+engine = create_engine(f"sqlite:///{database_path}")
+#engine = create_engine(f"postgresql://misael:password@localhost/icecreamstore")
+
+# Query all records in the db
+select * from icecreamstore
+data = engine.execute("select * from icecreamstore")
+for record in data
+	print(record)
+
+# Query single record in the db... *** remember you have to point/direct where the data is so add the code below
+data = engine.execute("select * from icecreamstore where price >= 1.25")
+for record in data
+	print(record)
+
+
+*** nice command to inspect and find out tables available in the db
+from sqlalchemy import inspect
+inspector = inspect(engine)
+
+for table_name in inspector.get_table_names():
+	print(f"Table: {table_name}")
+	for column in inspector.get_columns(table_name):
+		print(" -- Column: %s" % column['name'])
+	print()
+
+... this provides table(s) and structure table... important: do not mess with the structure tabel... Table: sqlite_sequence table
+
+****to connect sql to pandas here is what you need to do
+# Pandas
+import pandas as pd
+# sql alchemy
+from sqlalchemy import create_engine
+database_path = ../Resources/Census_Data.sqlite"
+#create engine
+engine = create_engine(f"sqlite:///{database_path}")
+conn = engine.connect()   *** this connects to pandas on top of db
+# Query all records in the db
+data = pd.read_sql("select * from Census_Data", conn)
+#preview the data
+data.head()
+
+
+*** Activity 4: create engine to connect ot census db; query all data from census_data and load into pandas; 
+	create engine to connect to zip db; query all data from zip_data table and load in pandas; show the .head() of imported data
+
+# create engine to connect to census db
+import pandas as pd
+# sql alchemy
+from sqlalchemy import create_engine
+
+#create engine for census data
+census_database_path = "../Resources/Census_Data.sqlite"
+engine = create_engine(f"sqlite:///{census_database_path}")
+conn = engine.connect()
+
+
+#query all data from census_data and load into pandas; 
+# Query all records in the db
+census_data = pd.read_sql("select * from Census_Data", conn)
+
+#create engine to connect to zip db
+zip_database_path = "../Resources/Zip_Census.sqlite"
+engine = create_engine(f"sqlite:///{zip_database_path}")
+conn = engine.connect()
+
+#query all data from zip_data table and load in pandas
+zip_data = pd.read_sql("select * from Zip_Census", conn)
+
+# show the .head() of imported data
+# preview the data
+census_data.head()
+zip_data.head()
+
+# Merge the columns
+combined_data = pd.merge(census_data, zip_data, on = "CityState", how = "inner")
+
+# Combined data
+combined_data.head()
+
+
+---- Object Oriented Programming (OOP)
+need to understand Procedure Oriented Programming (POP)= how things are organized from top to bottom
+
+				Main Program
+			   /	     |        \
+		     	 \/  	    \|/        \/
+		Function-1	Function-2   	Function-3
+		      \/ 	     |		  \/
+		Function-4	     |		Function_5
+		      /     \  	     |	     /     \
+		    \/       \/	     |	   \/	   \/
+		Function 6	Function_7	Function_8
+
+
+-- if we are needing to do a similar function over and over again (like example above loading and reading db into pandas) 
+-- we can define and create a function in python to make code shorter and keep from repeating program over and over again
+***-- how to do this is python? define function and procedure and run code... see below ****
+def read_and_output_data():
+	census_database_path = "../Resources/Census_Data.sqlite"
+	engine = create_engine(f"sqlite:///{census_database_path}")
+	census_data = pd.read_sql("select * from Census_Data", conn)	
+	print(census_data.head())
+
+read_and_output_data()
+
+
+*** we can make this more robust by using this function for other or many db
+def read_and_output_data(db_name):
+	census_database_path = "../Resources/" + db_name + ".sqlite"
+	engine = create_engine(f"sqlite:///{census_database_path}")
+	census_data = pd.read_sql("select * from" + db_name, engine)    ----- up there we used 'conn' but looks like 'engine' reads it too and may be faster	
+	print(census_data.head())
+
+read_and_output_data("Census_Data)  --- reads Census_Data			
+read_and_output_data("Zip_Census)  --- reads Zip_Census
+
+--- problem with POP is that it is very difficult to scale up especially with larger and more complex databases
+---	so in comes Object Oriented Programming OOP
+	--- everything in OOP can be modeled in programming using attributes and behaviors
+
+				  Name
+			       Attributes
+			        Behaviors
+			    /\	   /\     /\
+		     	   /       |        \
+			 \/  	   \/        \/
+			Name                Name
+		     Attributes		 Attributes
+	             Behaviors		  Behaviors
+		      	    /\		    /\
+		     	      \		   /
+			      \/  	 \/
+				   Name
+				Attributes
+				 Behavior
+
+
+-- OOP is a 'blueprint' of a design where you create a base class (template) and create an instance (actual case, person, etc) 
+--   of the base class [eg., dog(base class) - fido(actual dog named fido]
+--  we can create functions of a base class and use it to input actual instances
+*** # Define a class
+
+
+# Now lets create a list of dogs (3) for list of 3 instances
+
+dog_list = [Dog('Fido', 'bown'), Dog('Charlie', 'white', Dog('Buddy', 'black')]
+
+for d in dog_list:
+	print(d.name + ' - ' + d.color)
+
+# --- prints out: Fido - brown
+  --- prints out: Charlie - white
+  --- prints out: Buddy - black
+
+for d in dog_list:
+	d.bark()
+	d.eat()
+
+# --- prints out: Fido said: woof-woof
+  --- prints out: Fide is fed and happy
+  --- prints out: Charlie said: woof-woof
+  --- prints out: Charlie is fed and happy
+  --- prints out: Buddy said: woof-woof
+  --- prints out: Buddy is fed and happy
+
+#for d in dog_list:    				**** see above for code
+#	d.eat("chicken")			**** see above for code
+# --- prints out: Fido said: woof-woof
+  --- prints out: Fido ate chicken
+  --- prints out: Charlie said: woof-woof
+  --- prints out: Charlie ate chicken
+  --- prints out: Buddy said: woof-woof
+  --- prints out: Buddy ate chicken
+
+
+
+...left off at 1:50 on recording...
+
+**** Activity: Create a class surfer and intialize it with name, hometown, and rank instance; create an instance of surfer; print name, hometown and rank of your surfer
+**** Bonus: create a variable to keep track of changes in while loop
+# Create a class surfer and intialize it with name, hometown, and rank instance; 
+class surfer():
+	def __init__(self, name, hometown, rank):
+		self.name = name
+		self.hometown = hometown
+		self.rank = rank
+
+#create an instance of surfer; 
+surfer = surfer('Joe', 'hawaii', 1)
+surfer_list = [surfer('Joe', 'hawaii', 1), surfer('Charlie', 'oakland', 2), surfer('Buddy', 'los angeles', 3)]
+
+# print name, hometown and rank of your surfer
+print(surfer.name)
+print(surfer.hometown)
+print(surfer.rank)
+
+
+#  Bonus: create a variable to keep track of changes in while loop
+go = True
+
+# while loop runs as longs as go is True
+while go:
+	# ask for user input and store answers within variables
+	name = input("What is the surfer's name? ")
+	hometown = input("What is the surfer's hometown? ")
+	rank = int(input("What is the surfer's rank? "))
+
+	# create a new instance of the surfer class using these values
+	surfer = surfer(name, hometown, rank)
+
+	# print the object's attributes
+	print(surfer.name)
+	print(surfer.hometown)
+	print(surfer.rank)
+
+	# check to see if the user would like to continue
+	check = input("Would you like to continue? (y/n? ")
+	if(check.lower() == "y"):
+		go = True
+
+	else:
+		go = False
+
+
+**** Creating and passing a string into instance function
+# Define the Film calss
+class Film()
+	# A required function to intialize the class object
+	def __init__(self, name, length, release_year, language):
+		self.name = name
+		self.length = length
+		self.release_year = release_year
+		self.language = languare
+
+# An object belonging to the Film class
+star_wars = Film("Star Wars", 121, 1977, "English")
+# the command below prints out or provides access name space of object from class list and converts into a dictionary {...} layout
+print(star_wars.__dict__)  
+
+# Define the Expert class
+class Expert():
+	# A required function to intialize the class object
+	def __init__(self, name):
+		self.name = name
+	# A method that takes another object as its argument
+	def boast(self, obj):
+		# Print out Expert object's name
+		print("Hi. My name is", self.name)
+		# Print out the name of the Film class object
+		print("I know a lot about", obj.name)
+		print("It is", obj.length, "minutes long")
+		print("It was released in", obj.release_year)
+		print("It is in", obj.language)
+ 
+# An object belonging to the Film class
+george_lucas = Expert("George Lucas")
+
+george_lucas.boast(star_wars)
+
+# prints out results...
+
+# Another example
+startrek = Film("Star Trek", 151, 1990, "Spanish")
+george_lucas.boast(startrek)
+# prints out results on Star Trek...
+
+
+**** this code below is to apply inheritance of attributes where a class has been created and you want to apply inheritant attributes for new instances
+class Dog():
+	# Utilize the python constructor to intialize the object
+	def __init__(self, dog_name, dog_color):
+		self.name = dog_name  # property name
+		self.color = dog_color  # property color
+	# method
+	def bark(self):   # self is the instance of the dog and in this case all dogs will bark
+		print(self.name + ' said: woof-woof')
+
+	def eat(self):   # self is the instance of the dog and in this case all dogs will bark
+		print(self.name + ' is fed and happy')
+
+class Husky
+	pass
+
+class Husky(Dog):
+	def heavy_labor(self):
+		print("I'm exhausted")
+
+myhusky = Husky("Charlie", "black and white")
+print(dog.instance.name)
+print(dog.instance.color)
+myhusky.heavy_labor()
+
+
+**** Activity 9 See reporsitory for activity readme and tasks
+# Create a method called speak that prints "Hangs loose, bruh!"
+# Create a method called biography that prints the surfer's name and hometown
+# Create a method called cheer that will print "I totally rock man, no wipeouts!" if the surfer has no wipeouts. Otherwise, it prints "Bummer bruh, keep on keeping on!"
+# Create two surfers that print out all their info and run all the methods
+
+
+
+# Create a surfer class that has name, hometown, rank, and wipeouts instance variables
+class Surfer():
+# Keep track of surfer count as they are created
+# surferCount = 0
+
+	#Constructor
+	# ----------------------------------------------------------------------------------
+	# Initialize the surfer and assign each surfer a new surfer count upon creation... note that wipeouts=0, this is a parameter, if nothing is imputed here it takes on a value of 0
+	def __init__(self, name, hometown, rank, wipeouts=0):
+		self.name = name
+		self.hometown = hometown
+		self.rank = rank
+		self.wipeouts = wipeouts
+		Surfer.surferCount += 1
+
+	# Class Methods
+	# ----------------------------------------------------------------------------------
+	# Prints what number surfer they are based on when they are created
+	def surfer_count(self):
+		print("Total surfers shredding wave %d" % Surfer.surferCount)
+
+		# Prints out simple string
+		def speak(self):
+			print("Hang loose bruh!")
+			
+		# Interpolates based on their attributes
+		def biography(self):
+			print(f"My name is {self.name}, I am from {self.hometown} and rank #{self.rank}, I've wiped out {self.wipeouts}
+	
+		# Check how many wipeouts and print out statement
+		def cheer(self):
+			if self.wipeouts == 0:
+				print("I totally rock man, no wipeouts!")
+			else:
+				print("Bummer bruh, keep on keeping on!")
+
+# create an instance of surfers 
+surfer1 = Surfer('Kelly Slater', 'Cocoa Beach', 1)
+print(surfer1.name)
+print(surfer1.hometown)
+print(surfer1.rank)
+print(surfer1.wipeouts)
+surfer1.speak()
+surfer1.biography()
+surfer1.cheer()
+surfer1.surfer_count()
+
+surfer2 = Surfer('John Breezy', 'Spring Lake', 1, 10)
+print(surfer2.name)
+print(surfer2.hometown)
+print(surfer2.rank)
+print(surfer2.wipeouts)
+surfer2.speak()
+surfer2.biography()
+surfer2.cheer()
+surfer2.surfer_count()
+
+print(Surfer.surferCount) # class variable
+print(surfer1.surferCount) # instance variable
+print(Surfer2.surferCount) # instance variable
+
+# To provide dictionary list for surfer1 {...}
+print(surfer1.__dict__)
+
+
+
+
+
+
+
+
+
+
+
+
+**** Here is an example of using special case incrementation like surferCount above
+class Employee():
+	raise_ratio = 1.03
+	def __init__(self, name, salary):
+		self.name = name
+		self.salary = salary
+	def raise_salary()
+		self.salary *= self.raise_ratio
+
+average_joe = Employee("joe", 5000)
+average_joe.raise_salary()
+average_joe.salary
+
+ceo = Employee("ceo", 10000)
+ceo.raise_ratio = 2
+ceo.raise_salary()
+ceo.salary
+
+
